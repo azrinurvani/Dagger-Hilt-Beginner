@@ -15,6 +15,7 @@ import dagger.hilt.android.scopes.ActivityScoped
 import dagger.hilt.android.scopes.FragmentScoped
 import dagger.hilt.components.SingletonComponent
 import javax.inject.Inject
+import javax.inject.Qualifier
 import javax.inject.Singleton
 
 //yang menggunakan depedency itu diberikan annotation @AndroidEntryPoint
@@ -35,7 +36,8 @@ class MainActivity : AppCompatActivity() {
         println(injectSomeClass.doAThing())
         println(injectSomeClass.doSomeOtherThing())
 
-        println(injectInterfaceImpl.doInterfaceImpl())
+        println(injectInterfaceImpl.doInterfaceImpl1())
+        println(injectInterfaceImpl.doInterfaceImpl2())
     }
 }
 
@@ -78,20 +80,40 @@ class SomeOtherClass @Inject constructor(){
 
 @ActivityScoped
 class SomeClassDepedency @Inject constructor(
-    private val someInterface: SomeInterface
+    @Impl1 private val someInterfaceImpl1: SomeInterface,
+    @Impl2 private val someInterfaceImpl2: SomeInterface
 ){
-    fun doInterfaceImpl(): String{
-        return someInterface.exampleInterface()
+    fun doInterfaceImpl1(): String{
+        return someInterfaceImpl1.exampleInterface()
+    }
+
+    fun doInterfaceImpl2(): String{
+        return someInterfaceImpl2.exampleInterface()
     }
 }
 
 ////Ini tidak bisa diterapkan (akan error), karena interface ticdak bisa di implement di injection constructor,
 ///Mesti dibuatkan suatu module @Binds agar Interface sudah dinyatakan bisa di build menggunakan Hilt
-class SomeInterfaceImpl @Inject constructor(
-    private val someDepedency:String
+//class SomeInterfaceImpl @Inject constructor(
+//    private val someDepedency:String
+//) : SomeInterface{
+//    override fun exampleInterface():String {
+//        return "Interface implement : $someDepedency"
+//    }
+//
+//}
+class SomeInterfaceImpl1 @Inject constructor(
 ) : SomeInterface{
     override fun exampleInterface():String {
-        return "Interface implement : $someDepedency"
+        return "Interface implement 1 : "
+    }
+
+}
+
+class SomeInterfaceImpl2 @Inject constructor(
+) : SomeInterface{
+    override fun exampleInterface():String {
+        return "Interface implement 2 : "
     }
 
 }
@@ -115,28 +137,57 @@ interface SomeInterface{
 //    abstract fun bindInterfaceDepedency(someInterfaceImpl: SomeInterfaceImpl):SomeInterface
 //}
 
+//@InstallIn(ActivityComponent::class)
+//@Module
+//class MyModule{
+//
+//    @ActivityScoped
+//    @Provides
+//    fun provideSomeString():String{
+//        return "some string"
+//    }
+//
+//    @ActivityScoped
+//    @Provides
+//    fun provideInterfaceDepedency(
+//        someString:String
+//    ):SomeInterface{
+//        return SomeInterfaceImpl(someString)
+//    }
+//
+//    @ActivityScoped
+//    @Provides
+//    fun providesGsonDepedency():Gson{
+//        return Gson()
+//    }
+//
+//}
+//TODO 8 - Implement annotation untuk type injection yang sama
 @InstallIn(ActivityComponent::class)
 @Module
 class MyModule{
 
+    @Impl1 //custom annotation untuk pembeda dari module yang type nya sama
     @ActivityScoped
     @Provides
-    fun provideSomeString():String{
-        return "some string"
+    fun provideInterfaceDepedency1():SomeInterface{
+        return SomeInterfaceImpl1()
     }
 
+    @Impl2
     @ActivityScoped
     @Provides
-    fun provideInterfaceDepedency(
-        someString:String
-    ):SomeInterface{
-        return SomeInterfaceImpl(someString)
-    }
-
-    @ActivityScoped
-    @Provides
-    fun providesGsonDepedency():Gson{
-        return Gson()
+    fun provideInterfaceDepedency2():SomeInterface{
+        return SomeInterfaceImpl2()
     }
 
 }
+
+//TODO 9 - Buat annotation untuk pembeda pada type depedency yang sama
+@Qualifier
+@Retention(AnnotationRetention.BINARY)
+annotation class Impl1
+
+@Qualifier
+@Retention(AnnotationRetention.BINARY)
+annotation class Impl2
